@@ -63,31 +63,25 @@ pub fn owner<'a>(
 
     if spl_token_account.mint == owner_token::get_mint_address() { // mint
         if spl_token_account.amount >= owner_token::MIN_AMOUNT { // balance
-            // get owner associated token address
-            let associated_token_address = get_associated_token_address(
-                &owner_account.key,
-                &spl_token_account.mint);
-
-            if spl_account.key != &associated_token_address { // account
-                // is owner associated account
+            if spl_token_account.owner == *owner_account.key { // account
                 return Ok(owner_account);
             } else {
-                // error: incorrect account: spl account is not associated account
-                msg!("Error: account is not token account owner.\n
-                    {} is not expected: {}.", spl_account.key, &associated_token_address);
-                return Err(ProgramError::InvalidAccountData);
+                // error: incorrect spl token account: not associated token account
+                msg!("Error: account is not associated token account.\n
+                    {} is not expected owner: {}.", spl_token_account.owner, *owner_account.key);
+                return Err(ProgramError::Custom(1));
             }
         } else {
             // error: incorrect token amount
             msg!("Error: insufficient token balance.\n
                 {} isn't enough. Expected: {}.", spl_token_account.amount, owner_token::MIN_AMOUNT);
-            return Err(ProgramError::InsufficientFunds);
+            return Err(ProgramError::Custom(2));
         }
     } else {
         // error: incorrect token mint
         msg!("Error: incorrect token account mint address.\n
             {} isn't expected: {}.", spl_token_account.mint, owner_token::get_mint_address());
-        return Err(ProgramError::InvalidAccountData);
+        return Err(ProgramError::Custom(3));
     }
 }
 

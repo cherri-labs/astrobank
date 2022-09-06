@@ -27,6 +27,8 @@ fn process_instruction<'a>(
         return Err(ProgramError::InvalidInstructionData);
     }
 
+    /* 0: withdraw      *
+     * 1: drain account */
     if data[0] == 0 {
         return proc::withdraw(
             program_id,

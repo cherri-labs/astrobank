@@ -21,6 +21,15 @@ use crate::accounts::rent_exemption;
 // lock period length in seconds
 const LOCK_TIME: UnixTimestamp = 256 * 24 * 60 * 60;
 
+////////////////////////
+/* custom error codes */
+////////////////////////
+
+/* 0: active lock period                 *
+ * 1: incorrect associated token account *
+ * 2: incorrect spl token amount         *
+ * 3: incorrect spl token mint           */
+
 /////////////////////
 /* program structs */
 /////////////////////
@@ -32,6 +41,7 @@ struct Account {
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 struct Request {
+    pub seed: String,
     pub amount: u64,
 }
 
@@ -57,22 +67,23 @@ pub fn withdraw<'a>(
         next_account_info(accounts_iter)?
     )?;
 
-    // account owner
-    let (account_owner, _bump_seed) = Pubkey::find_program_address(
-        &[&recipient_account.key.to_bytes(), b"bank"],
-        program_id
-    );
-
-    // verify account ownership
-    if account_owner != *recipient_account.key {
-        // not account owner
-        msg!("Error: only the account owner can request a withdrawal.");
-        return Err(ProgramError::InvalidAccountData);
-    }
-
     // create new withdrawal request
     let mut request = Request::try_from_slice(&data)
         .expect("Error: failed to deserialize instruction data.");
+
+    // find program address
+    let program_address = Pubkey::create_with_seed(
+        &recipient_account.key,
+        &request.seed,
+        program_id
+    )?;
+
+    // verify account ownership
+    if program_address != *writing_account.key {
+        // not account owner
+        msg!("Error: only the account owner can request a withdrawal.");
+        return Err(ProgramError::IllegalOwner);
+    }
 
     if **writing_account.lamports.borrow() < request.amount {
         // insufficient balance for withdrawal
@@ -123,12 +134,12 @@ pub fn drain_account<'a>(
     let time_left = LOCK_TIME - (clock.unix_timestamp - account_data.creation);
 
     if time_left > 0 && clock.unix_timestamp > account_data.creation {
-        // lock period not up (or not started)
+        // lock period running (not up or not started yet)
         msg!("Error: `drain_account` cannot force withdrawal before lock period is up.\n
             Current Unix timestamp: {}\n,
             Account creation time: {}\n,
             Time left in lock period: {}", clock.unix_timestamp, account_data.creation, time_left);
-        return Err(ProgramError::InvalidArgument);
+        return Err(ProgramError::Custom(0));
     } else if **writing_account.lamports.borrow() < request.amount {
         // insufficient balance for withdrawal
         request.amount = **writing_account.lamports.borrow();
