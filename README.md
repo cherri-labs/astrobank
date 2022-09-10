@@ -3,7 +3,8 @@
 **Astro Bank** is a minimalist *open bank* built on Solana.
 Users can only deposit and withdraw Solana tokens as of v0.2 (other token allocations to be implemented in future versions).
 
-## Version 0.2
+## Version
+### 0.3
 
 Astro Bank is built with simplicity in mind. Currently it works with only two separate entrypoints.
 Its main focus in efficiency and layering, which means that while this is still an alpha version, it is already fully operable.
