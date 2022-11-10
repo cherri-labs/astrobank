@@ -1,6 +1,6 @@
-# Astro Bank
+# Astro Gate
 
-**Astro Bank** is a minimalist *open bank* built on Solana.
+**Astro Gate** is a minimalist *open bank* built on Solana.
 Users can only deposit and withdraw Solana tokens as of current version. Other tokens may be implemented in future versions.
 
 ## Version
